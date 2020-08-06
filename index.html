@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrabble</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css" integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script defer src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js" integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/" crossorigin="anonymous"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="board">
+            <div class="sections">
+            <!--<div class="border-top"> -->
+                    <div class="border-top-left"></div>
+                    <div class="border-top-centre">
+                        <h4>SCRABBLE</h3>
+                    </div>
+                    <div class="border-top-right"></div>
+                <!-- </div>
+                <div class="middle"> -->
+                    <div class="border-left"></div>
+                    <div class="game-grid-container">
+                        <div class="game-grid-border-1">
+                            <div class="game-grid-border-2">
+                                <div class="game-grid">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-right">
+                        <h4>SCRABBLE</h3>
+                    </div>
+                <!-- </div>
+                <div class="border-bottom"> -->
+                    <div class="border-bottom-left"></div>
+                    <div class="border-bottom-centre"><h4>SCRABBLE</h3></div>
+                    <div class="border-bottom-right"></div>
+                <!-- </div> -->
+            </div>
+        </div>
+        <div class="info">
+            <div class="handContainer sortable">
+                <!-- <div class="LetterHolder sortable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="a">
+                        <div class="letter">A</div>
+                        <div class="letterScore">1</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="b">
+                        <div class="letter">B</div>
+                        <div class="letterScore">3</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="i">
+                        <div class="letter">I</div>
+                        <div class="letterScore">5</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="l">
+                        <div class="letter">L</div>
+                        <div class="letterScore">7</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="i">
+                        <div class="letter">I</div>
+                        <div class="letterScore">8</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="t">
+                        <div class="letter">T</div>
+                        <div class="letterScore">10</div>
+                    </div>
+                <!-- </div>
+                <div class="LetterHolder droppable"> -->
+                    <div class="letterContainer" draggable="true" data-letter="y">
+                        <div class="letter">Y</div>
+                        <div class="letterScore">10</div>
+                    </div>
+                <!-- </div> -->
+            </div>
+            <div id="array"></div>
+        </div>
+    </div>
+</body>
+</html>
