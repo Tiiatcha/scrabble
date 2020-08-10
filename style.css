@@ -94,9 +94,10 @@
     user-select: none;
 }
 .letterScore{
-    font-size: 0.4rem;
+    font-size: 0.45rem;
     position: absolute;
-    bottom: -1px;right: 2px;
+    bottom: -1px;
+    right: 2px;
 }
 
 .dragging{
