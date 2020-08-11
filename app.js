@@ -48,45 +48,43 @@ let tiles = [];
 const gridSize = 15;
 let cells = {};
 let history = {};
-let turn = {player:0,
-            originalTiles:[],
-            words:{
-                primary:{
-                    letters:{},
-                    word:''}
-                }
-            };
+let tempLetters = {}
+const wordsObj = {0:{word:'',letters:{}}};//before confirming word/s rest words to this.
+let emptyTurnObj = {
+                player:0,
+                playedTiles:{},
+                words:wordsObj
+                };// on new turn this is the object template to reset back to.
+let turn = emptyTurnObj; // this is the working turn object
 const grid = document.querySelector('.game-grid');
 const buttonTest = document.querySelector('#testWord');
+
+const getDragAfterElement = (droppable,x)=>{
+    // this enables you to sort the letters while dragging them in the hand container
+    const draggableElements = [...droppable.querySelectorAll('[draggable="true"]:not(.dragging')];
+    return draggableElements.reduce((closest,child)=>{
+        const box = child.getBoundingClientRect();
+        const offset = x - box.left - box.width/2;
+        if(offset < 0 && offset > closest.offset)
+        {
+            return {offset:offset,elemet:child};
+        } else {
+            return closest;
+        }
+    },{offset:Number.NEGATIVE_INFINITY}).elemet
+}
 const tileDraggable = (e)=>{
     e.target.classList.add('dragging');
-    if(e.target.parentNode.classList.contains('cell')) dropLetter(e.target.parentNode,e.target,"remove");
+    if(e.target.parentNode.classList.contains('cell')) tileAction(e.target.parentNode,e.target,"remove");
 }
 const tileDragEnd = (e)=>{
     e.target.classList.remove('dragging');
     const square = e.target.parentNode
-    dropLetter(square,e.target,'addOwn')
+    tileAction(square,e.target,'addOwn')
 };
 
-const setDetails = (tile)=>{
-    const droppedOn = tile.parentNode;
-    const row = droppedOn.dataset.row;
-    const col = droppedOn.dataset.col;
-    const letter = tile.dataset.letter
-    tile.dataset.row = row;
-    tile.dataset.col = col;
-    //dropLetter(droppedOn,tile,'addOwn')
-}
-const shuffleTiles = () => {
-    let tempArray = [];
-    while(letters.length != 0){
-        let rIndex = Math.floor(Math.random()*letters.length);
-        tempArray.push(tempArray[rIndex]);
-        letters.splice(rIndex,1);
-    }
-    letters = tempArray;
-}
 const createTilesArr = () => {
+    // creates an array with all the tiles... this is the equivilent of putting all the tiles into a bag
     for(let letter in letters){
         for(i=0;i<letters[letter]['count'];i++){
             tiles.push({
@@ -98,6 +96,7 @@ const createTilesArr = () => {
            });
         }
     }
+    // this shuffles the tiles 3 times 
     tiles.sort(()=> Math.random() -0.5);
     tiles.sort(()=> Math.random() -0.5);
     tiles.sort(()=> Math.random() -0.5);
@@ -138,9 +137,11 @@ const createTileElem = (letter,draggable = false) => {
         });
 }
 const isVertical = () => {
-    return Object.keys(turm['originalLetters']).length > 1
+    // this determines if your word is set out verticly or horizontally
+    return Object.keys(turn.playedTiles).length > 1
 }
 const isValidWord = (word) => {
+    // using wordsapi check if word is a valid word
     return new Promise(resolve =>{
         const url = `https://wordsapiv1.p.rapidapi.com/words/${word}/usageOf`
         fetch(url, {
@@ -159,148 +160,298 @@ const isValidWord = (word) => {
 
     });
 }
-const completeWord = (isVerticle,wordNo = 0) => {
-    let firstSquare,lastSquare,altNumber,newCell,newLetter;
-    let tempLetters = turn[originalLetters];
-
-    if(isVertical)
-    {
-        const noOfRows = Object.keys(tempLetters).length
-    }
-
-    
-    turn['words']['primary']['letters'] = tempLetters;
-}
-const moreMidLetters = (isVerticle)=>
-{
-    let firstSquare,lastSquare,altNumber,newCell,newLetter;
-    if(isVertical)
-    {
-        const noOfRows = Object.keys(turm['words']['primary']['letters']).length;
-        firstSquare = parseInt(Object.keys(turn['words']['primary']['letters'])[0])
-        lastSquare = parseInt(Object.keys(turn['words']['primary']['letters'])[noOfRows-1]);
-        altNumber = Object.keys(turn['words']['primary']['letters'][firstSquare])[0];
-        let i = firstSquare-1;
-        // loop through current object properties and compare current cell with previous cell,
-        // if j > i+1
-        for(let cell in turn['words']['primary']['letters'])
-        {
-            if(parseInt(cell) > i+1){
-                newCell = document.querySelector(`[data-row="${i+1}"][data-col="${altNumber}"]`)
-                newLetter = newCell.firstChild;
-                dropLetter(newCell,newLetter,'add');
-            }
-            i = parseInt(cell)
+const buildWord = (letters) => {
+    let word = '';
+    let multiplier = 1
+    for(let row in letters){
+        for(let col in letters[row]){
+            word = word+letters[row][col].letter
+            if(letters[row][col].multiplier == 'doubleWord') multiplier = multiplier * 2
+            if(letters[row][col].multiplier == 'trippleWord') multiplier = multiplier * 2
         }
+    }
+    return {word,multiplier};
+}
+const wordScore = (word) => {
+    const letters = word.letters
+    const wordMultiplier = word.multiplier;
+    let letterScore = 0;
+    let total = 0;
+    for(let letter in letters){
+        // TODO: finish Word Scoring mechanism
+        // NOTE: apply row and column properties to get score and multiplier for the letter
+        letterScore = letters[letter].points;
+        if(letters[letter].multiplier == 'doubleLetter') letterScore = letterScore * 2;
+        if(letters[letter].multiplier == 'trippleLetter') letterScore = letterScore * 3;
+        console.log(letterScore)
+    }
+}
+const confirmTurn = (submitWord=false) => {
+    turn.words = wordsObj;
+    wordNo = 0;
+    turn.words[0].letters = turn.playedTiles;
+    completeWord(isVertical(turn.words.playedTiles));
+    word = buildWord(turn.words[0].letters);
+    turn.words[0].word = word.word;
+    turn.words[0].wordMultiplier = word.multiplier
+    //wordScore(turn.words[0]);
+    // TODO: check for more words
+    if(submitWord){
+        // TODO: Add move to history and reset players turnObject
+    }
+}
+
+buttonTest.addEventListener('click',confirmTurn);
+
+const completeWord = (isVertical,wordNo = 0) => {
+    // In this function we will check for additional letters that make up our word thaat were already on the board
+    let square;
+    let tile;
+    let firstSquare;// this is the first square in our played Tiles object
+    let altNumber;// words run either horizontally (in rows) when this will represent the row, or vertically(in columns) when this will represent the column
+    let lastSquare;// this is the last square in our played tiles object
+    let newCell;//??
+    let newLetter;// if this is a nely played letter then this will be true otherwise it will be false
+    if(wordNo == 0) tempLetters = turn.words[wordNo].letters;
+    if(isVertical)
+    {
+        const noOfRows = Object.keys(tempLetters).length; // no of rows used by
+        firstSquare = Object.keys(tempLetters)[0];// row one
+        altNumber = Object.keys(tempLetters[firstSquare])[0];
+        lastSquare = Object.keys(tempLetters)[noOfRows-1];// last row
+        if(firstSquare != 0) {
+            currentRow = firstSquare
+            cell = cells[currentRow-1][altNumber]
+            if(typeof tempLetters[currentRow-1] == 'undefined' && cell.letter){
+                tempLetters[cell.row] = {};
+                tempLetters[cell.row][altNumber] = cell
+            }
+            // TEST: Test Recursion!
+            completeWord(isVertical,wordNo)
+        }
+        // TODO: Add logic for checking for next letters
+
     }
     else
     {
-        const noOfCols = Object.keys(turm['words']['primary']['letters'][0]).length;
-        firstSquare = parseInt(Object.keys(turn['words']['primary']['letters'])[0][0])
-        lastSquare = parseInt(Object.keys(turn['words']['primary']['letters'])[0][noOfCols-1]);
-        altNumber = Object.keys(turn['words']['primary']['letters'][firstSquare]);
-        let i = firstSquare-1;
-        // loop through current object properties and compare current cell with previous cell,
-        // if j > i+1
-        for(let cell in turn['words']['primary']['letters'])
-        {
-            if(parseInt(cell) > i+1){
-                newCell = document.querySelector(`[data-col="${i+1}"][data-row="${altNumber}"]`)
-                newLetter = newCell.firstChild;
-                dropLetter(newCell,newLetter,'add');
+        // TEST: Test Horizontal Word
+        const noOfCols = Object.keys(tempLetters)[0].length; // no of rows used by
+        firstSquare = Object.keys(tempLetters)[0][0];// row one
+        altNumber = Object.keys(tempLetters[firstSquare])[0];
+        lastSquare = Object.keys(tempLetters)[0][noOfCols-1];// last row
+        if(firstSquare != 0) {
+            currentCol = firstSquare
+            cell = cells[altNumber][currentCol-1]
+            if(cell.letter){
+                tempLetters[altNumber] = {};
+                tempLetters[altNumber][cell.col] = cell
             }
-            i = parseInt(cell)
+            completeWord(isVertical,wordNo)
         }
+        // TODO: Add logic for checking for next letters
+
     }
+    turn.words[wordNo].letters = tempLetters;
+    tempLetters = {};
 }
-const moreEndLetters = (isVerticle) =>
-{
-    return new Promise(resolve =>{
-        let firstSquare,lastSquare,altNumber;
-        if(isVertical){
-            firstSquare = Object.keys(turn)[0]
-            lastSquare = Object.keys(turn)[Object.keys(turn).length-1];
-            altNumber = Object.keys(turn[firstSquare])[0];
-            if(firstSquare != 0){
-                previousSquare = document.querySelector(`[data-row="${firstSquare-1}"][data-col="${altNumber}"]`)
-                if(letter = previousSquare.firstChild){
-                    dropLetter(previousSquare,letter,'add');
-                    moreEndLetters(isVerticle)
-                }
-            }
-            if(lastSquare != 14){
-                nextSquare = document.querySelector(`[data-row="${parseInt(lastSquare)+1}"][data-col="${altNumber}"]`)
-                if(letter = nextSquare.firstChild){
-                    dropLetter(nextSquare,letter,'add');
-                    moreEndLetters(isVerticle)
-                }
-            }
-        }
-        else
-        {
-            firstSquare = Object.keys(turn)[0][0]
-            lastSquare = Object.keys(turn)[0][Object.keys(turn).length-1];
-            altNumber = Object.keys(turn[firstSquare]);
-            if(firstSquare != 0){
-                previousSquare = document.querySelector(`[data-col="${firstSquare-1}"][data-row="${altNumber}"]`)
-                if(letter = previousSquare.firstChild){
-                    dropLetter(previousSquare,letter,'add');
-                    moreEndLetters(isVerticle)
-                }
-            }
-            if(lastSquare != 14){
-                nextSquare = document.querySelector(`[data-col="${parseInt(lastSquare)+1}"][data-row="${altNumber}"]`)
-                if(letter = nextSquare.firstChild){
-                    dropLetter(nextSquare,letter,'add');
-                    moreEndLetters(isVerticle)
-                }
-            }
-        }
-        resolve(true);
+const tileAction = (cell,tile,action)=>{
+    /*
+        When dropping a tile on to a square we add this letter to the turn object under playedTiles property
+    */
+   const row = cell.dataset.row;
+   const col = cell.dataset.col;
+    if(row == 'undefined' || col == 'undefined') return;// exit function
+
+    const multiplier = action=='addOwn'?cell.dataset.multiplier:false
+    const playedTile = action=='addOwn'?true:false
+    const letter = tile.dataset.letter;
+    
+    if(action == 'remove'){
+        delete turn.playedTiles[row][col]
+        if(Object.keys(turn.playedTiles[row]).length == 0) delete turn.playedTiles[row];
+    } 
+    else 
+    {
+        if(typeof turn.playedTiles[row] == 'undefined') turn.playedTiles[row] = {}
+        if(typeof turn.playedTiles[row][col] == 'undefined') turn.playedTiles[row][col] = {letter,row,col,multiplier,playedTile}
+        setTileAttributes(tile);
+    }
+    console.log(turn)
+}
+
+
+
+
+
+
+
+
+const setTileAttributes = (tile)=>{
+    const droppedOn = tile.parentNode;
+    const row = droppedOn.dataset.row;
+    const col = droppedOn.dataset.col;
+    const letter = tile.dataset.letter
+    tile.dataset.row = row;
+    tile.dataset.col = col;
+}
+
+const setConfirmed = () => {
+    let row,col;
+    const allTilesOnBoard = grid.querySelectorAll('.letterContainer');
+    allTilesOnBoard.forEach(tileOnBoard=>{
+        tileOnBoard.parentNode.dataset.used = true;
+        tileOnBoard.removeEventListener('dragstart',tileDraggable)
+        tileOnBoard.removeEventListener('dragend',tileDragEnd)
+        tileOnBoard.setAttribute('draggable',false)
+        row = tileOnBoard.dataset.row;
+        col = tileOnBoard.dataset.col;
+        cells[row][col].letter = tileOnBoard.dataset.letter
     });
+    turn = {player:0,playedTiles:{},words:{0:{letters:{},word:''}}};
+    
+}
+const testBoard = async () =>{
+    return new Promise(resolved=>{
+        createTileElem("h").then((res,rej)=>{
+            document.querySelector('#square76').appendChild(res);
+            tileAction(document.querySelector('#square76'),res,'addOwn')
+        })
+        createTileElem("a").then((res,rej)=>{
+            document.querySelector('#square77').appendChild(res);
+            tileAction(document.querySelector('#square77'),res,'addOwn')
+        })
+        createTileElem("p").then((res,rej)=>{
+            document.querySelector('#square78').appendChild(res);
+            tileAction(document.querySelector('#square78'),res,'addOwn')
+        })
+        createTileElem("p").then((res,rej)=>{
+            document.querySelector('#square79').appendChild(res);
+            tileAction(document.querySelector('#square79'),res,'addOwn')
+        })
+        createTileElem("y").then((res,rej)=>{
+            document.querySelector('#square710').appendChild(res);
+            tileAction(document.querySelector('#square710'),res,'addOwn')
+        })
+        
+        createTileElem("r").then((res,rej)=>{
+            document.querySelector('#square89').appendChild(res);
+            tileAction(document.querySelector('#square89'),res,'addOwn')
+        })
+        createTileElem("i").then((res,rej)=>{
+            document.querySelector('#square99').appendChild(res);
+            tileAction(document.querySelector('#square99'),res,'addOwn')
+        })
+        createTileElem("z").then((res,rej)=>{
+            document.querySelector('#square109').appendChild(res);
+            tileAction(document.querySelector('#square109'),res,'addOwn')
+        })
+        createTileElem("e").then((res,rej)=>{
+            document.querySelector('#square119').appendChild(res);
+            tileAction(document.querySelector('#square119'),res,'addOwn')
+        })
+        
+        createTileElem("g").then((res,rej)=>{
+            document.querySelector('#square118').appendChild(res);
+            tileAction(document.querySelector('#square118'),res,'addOwn')
+        })
+        createTileElem("a").then((res,rej)=>{
+            document.querySelector('#square1110').appendChild(res);
+            tileAction(document.querySelector('#square1110'),res,'addOwn')
+        })
+        createTileElem("r").then((res,rej)=>{
+            document.querySelector('#square1111').appendChild(res);
+            tileAction(document.querySelector('#square1111'),res,'addOwn')
+        })
+        createTileElem("o").then((res,rej)=>{
+            document.querySelector('#square1011').appendChild(res);
+            tileAction(document.querySelector('#square1011'),res,'addOwn')
+        })
+        
+        resolved();
+    })
+}
+const testHand = () => {
+    createTileElem("o",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    createTileElem("a",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    createTileElem("t",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    createTileElem("s",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    //createTileElem("a",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    createTileElem("b",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
+    createTileElem("c",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
 }
 
-const testWord = async ()=>{
-    const vert = await isVertical();
-    turm['words']['primary'][letters]=turn['originalLetters']
-
-    await moreEndLetters(vert);
-    await moreMidLetters(vert);
-
-    let word = '';
-    for(let row in turn["words"]["primary"]){
-        for(let col in turn["words"]["primary"]["letters"][row]){
-            word = word+turn["words"]["primary"]["letters"][row][col]["letter"]
-        }
-    }
-    const found = await isValidWord(word);
-    console.log(found);
-    turn["words"] = {"primary":word};
-}
-buttonTest.addEventListener('click',testWord);
-
-
-
-const getDragAfterElement = (droppable,x)=>{
-    const draggableElements = [...droppable.querySelectorAll('[draggable="true"]:not(.dragging')];
-    return draggableElements.reduce((closest,child)=>{
-        const box = child.getBoundingClientRect();
-        const offset = x - box.left - box.width/2;
-        if(offset < 0 && offset > closest.offset)
+const createBoard = () => {
+    for(row=0;row<(15);row++)
+    {
+        cells[row]={}
+        for(col=0;col<15;col++)
         {
-            return {offset:offset,elemet:child};
-        } else {
-            return closest;
+            cells[row][col] = {row,col,multiplier:false,letter:false,playedTile:false};
+            createSquare(row,col);
         }
-    },{offset:Number.NEGATIVE_INFINITY}).elemet
+
+    }
+    // console.log(cells);
 }
+const createSquare = (row,col) => {
+    htmlCell = document.createElement('div')
+    htmlCell.classList.add('cell');
+    htmlCell.classList.add('droppable');
+    htmlCell.setAttribute('id',`square${row}${col}`)
+    htmlCell.dataset.row = row;
+    htmlCell.dataset.col = col;
+    htmlCell.dataset.used = false;
+    htmlCell.dataset.multiplier = "false";
+    htmlCell.dataset.letter="false"
+    grid.appendChild(htmlCell);
+}
+const doubleWords = () =>{
+    
+    let left = 1;
+    let right = 13;
+    let leftCell = '';
+    let rightCell = '';
+    for(i = 1; i < 14; i ++)
+    {
+        if(i != 5 && i !=9)
+        {
+            leftCell = document.querySelector(`[data-row="${i}"][data-col="${left}"]`);
+            rightCell = document.querySelector(`[data-row="${i}"][data-col="${right}"]`);
+            leftCell.classList.add('doubleWord');
+            rightCell.classList.add('doubleWord');
+            leftCell.dataset.multiplier = 'doubleWord';
+            rightCell.dataset.multiplier = 'doubleWord';
+            cells[i][left].multiplier = 'doubleWord'
+            cells[i][right].multiplier = 'doubleWord'
+        }
+        left ++;
+        right --;
+    }
+}
+const addMultipliers = () =>{
+    // multipliers.trippleWords.forEach((cell)=>{
+    //     cells[cell[0]][cell[1]].isTrippleWord=true
+    //     document.querySelector(`[data-row="${cell[0]}"][data-col="${cell[1]}"]`).classList.add('trippleWord')
+    // })
+    multipliers.doubleWords.forEach((cell)=>{
+        cells[cell[0]][cell[1]].isDoubleWord=true
+    });
+    multipliers.trippleLetters.forEach((cell)=>{
+        cells[cell[0]][cell[1]].isTrippleLetter=true
+    });
+    multipliers.doubleLetters.forEach((cell)=>{
+        cells[cell[0]][cell[1]].isDoubleLetter=true
+    })
+}
+
+
 
 
 const setUpGame = async () => {
     grid.innerHTML = ''
-    turn = {player:0,originalTiles:{},words:{primary:{letters:{},word:''}}};
+    turn = {player:0,playedTiles:{},words:{primary:{letters:{},word:''}}};
     tiles = [];
-    await createSquares();
+    await createBoard();
     await doubleWords();
     createTilesArr()
     const draggables = document.querySelectorAll('[draggable="true"]');
@@ -341,187 +492,5 @@ const setUpGame = async () => {
     setConfirmed();
     testHand()
 }
-const setConfirmed = () => {
-    const allTilesOnBoard = grid.querySelectorAll('.letterContainer');
-    allTilesOnBoard.forEach(tileOnBoard=>{
-        tileOnBoard.parentNode.dataset.used = true;
-        tileOnBoard.removeEventListener('dragstart',tileDraggable)
-        tileOnBoard.removeEventListener('dragend',tileDragEnd)
-        tileOnBoard.setAttribute('draggable',false)
-    });
-    turn = {player:0,originalTiles:{},words:{primary:{letters:{},word:''}}};
-}
-const testBoard = async () =>{
-    return new Promise(resolved=>{
-        createTileElem("h").then((res,rej)=>{
-            document.querySelector('#cell76').appendChild(res);
-            dropLetter(document.querySelector('#cell76'),res,'addOwn')
-        })
-        createTileElem("a").then((res,rej)=>{
-            document.querySelector('#cell77').appendChild(res);
-            dropLetter(document.querySelector('#cell77'),res,'addOwn')
-        })
-        createTileElem("p").then((res,rej)=>{
-            document.querySelector('#cell78').appendChild(res);
-            dropLetter(document.querySelector('#cell78'),res,'addOwn')
-        })
-        createTileElem("p").then((res,rej)=>{
-            document.querySelector('#cell79').appendChild(res);
-            dropLetter(document.querySelector('#cell79'),res,'addOwn')
-        })
-        createTileElem("y").then((res,rej)=>{
-            document.querySelector('#cell710').appendChild(res);
-            dropLetter(document.querySelector('#cell710'),res,'addOwn')
-        })
-        
-        createTileElem("r").then((res,rej)=>{
-            document.querySelector('#cell89').appendChild(res);
-            dropLetter(document.querySelector('#cell89'),res,'addOwn')
-        })
-        createTileElem("i").then((res,rej)=>{
-            document.querySelector('#cell99').appendChild(res);
-            dropLetter(document.querySelector('#cell99'),res,'addOwn')
-        })
-        createTileElem("z").then((res,rej)=>{
-            document.querySelector('#cell109').appendChild(res);
-            dropLetter(document.querySelector('#cell109'),res,'addOwn')
-        })
-        createTileElem("e").then((res,rej)=>{
-            document.querySelector('#cell119').appendChild(res);
-            dropLetter(document.querySelector('#cell119'),res,'addOwn')
-        })
-        
-        createTileElem("g").then((res,rej)=>{
-            document.querySelector('#cell118').appendChild(res);
-            dropLetter(document.querySelector('#cell118'),res,'addOwn')
-        })
-        createTileElem("a").then((res,rej)=>{
-            document.querySelector('#cell1110').appendChild(res);
-            dropLetter(document.querySelector('#cell1110'),res,'addOwn')
-        })
-        createTileElem("r").then((res,rej)=>{
-            document.querySelector('#cell1111').appendChild(res);
-            dropLetter(document.querySelector('#cell1111'),res,'addOwn')
-        })
-        createTileElem("o").then((res,rej)=>{
-            document.querySelector('#cell1011').appendChild(res);
-            dropLetter(document.querySelector('#cell1011'),res,'addOwn')
-        })
-        
-        resolved();
-    })
-}
-const testHand = () => {
-    createTileElem("o",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    createTileElem("a",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    createTileElem("t",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    createTileElem("s",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    //createTileElem("a",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    createTileElem("b",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-    createTileElem("c",true).then((res,rej)=>{document.querySelector('.handContainer').appendChild(res)});
-}
 
-const createSquares = () => {
-    for(i=0;i<(15);i++)
-    {
-        cells[i]={}
-        for(j=0;j<15;j++)
-        {
-            cells[i][j] = {};
-            htmlCell = document.createElement('div')
-            htmlCell.classList.add('cell');
-            htmlCell.classList.add('droppable');
-            htmlCell.setAttribute('id',`cell${i}${j}`)
-            htmlCell.dataset.row = i;
-            htmlCell.dataset.col = j;
-            htmlCell.dataset.used = false;
-            htmlCell.dataset.multiplier = "false";
-            htmlCell.addEventListener('click',(e)=>{
-                const row = e.target.dataset.row;
-                const col = e.target.dataset.col;
-                if(typeof turn['originalTiles'][row]=='undefined') turn['originalTiles'][row]={}
-                if(typeof turn['originalTiles'][row][col]=='undefined')
-                {
-                    turn['originalTiles'][row][col] = "a"
-                }
-                else{
-                    delete turn['originalTiles'][row][col];
-                    if(Object.keys(turn['originalTiles'][row]).length == 0) delete turn['originalTiles'][row];
-                }
-            })
-            grid.appendChild(htmlCell);
-        }
-
-    }
-    // console.log(cells);
-}
-const doubleWords = () =>{
-    
-    let left = 1;
-    let right = 13;
-    let leftCell = '';
-    let rightCell = '';
-    for(i = 1; i < 14; i ++)
-    {
-        if(i != 5 && i !=9)
-        {
-            cells[i][left].isDoubleWord=true;
-            cells[i][right].isDoubleWord=true;
-            leftCell = document.querySelector(`[data-row="${i}"][data-col="${left}"]`);
-            rightCell = document.querySelector(`[data-row="${i}"][data-col="${right}"]`);
-            leftCell.classList.add('trippleWord');
-            rightCell.classList.add('trippleWord');
-            leftCell.dataset.multiplier = 'doubleWord';
-            rightCell.dataset.multiplier = 'doubleWord';
-        }
-        left ++;
-        right --;
-    }
-}
-const addMultipliers = () =>{
-    // multipliers.trippleWords.forEach((cell)=>{
-    //     cells[cell[0]][cell[1]].isTrippleWord=true
-    //     document.querySelector(`[data-row="${cell[0]}"][data-col="${cell[1]}"]`).classList.add('trippleWord')
-    // })
-    multipliers.doubleWords.forEach((cell)=>{
-        cells[cell[0]][cell[1]].isDoubleWord=true
-    });
-    multipliers.trippleLetters.forEach((cell)=>{
-        cells[cell[0]][cell[1]].isTrippleLetter=true
-    });
-    multipliers.doubleLetters.forEach((cell)=>{
-        cells[cell[0]][cell[1]].isDoubleLetter=true
-    })
-}
 setUpGame();
-// ability a=1,
-const dropLetter = (cell,tile,action)=>{
-    const row = cell.dataset.row;
-    const col = cell.dataset.col;
-    const letter = tile.dataset.letter
-    if(row == 'undefined' || col == 'undefined') return;
-    if(action == 'remove'){
-        delete turn['originalTiles'][row][col]
-        if(Object.keys(turn['originalTiles'][row]).length == 0) delete turn[row];
-    } else {
-        turn.originalTiles.push({
-            row,
-            col,
-            letter
-        })
-
-        if(typeof turn['originalTiles'][row]=='undefined') turn[row]={}
-        if(typeof turn['originalTiles'][row][col]=='undefined')
-        {
-            turn['originalTiles'][row][col] = {};
-        }
-        turn['originalTiles'][row][col]["letter"] = letter;
-        turn['originalTiles'][row][col]["new"] = false;
-        setDetails(tile);
-    }
-    if(action == 'addOwn'){
-        turn['originalTiles'][row][col]["multiplier"] = cell.dataset.multiplier;
-        turn['originalTiles'][row][col]["new"] = true;
-    }
-    console.log(turn)
-}
